@@ -1,0 +1,17 @@
+{
+  "sheetsById": {
+    "Sheet 1": {
+      "staticOverrides": {
+        "byObject": {
+          "boy.jpg": {
+            "y": 0
+          }
+        }
+      }
+    }
+  },
+  "definitionVersion": "0.4.0",
+  "revisionHistory": [
+    "v9-bY3AjTQT2XWMz"
+  ]
+}

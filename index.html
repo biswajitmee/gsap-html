@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Babylon.js Vertical Image Scroll</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100vh;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <div id="gallery-container">
+        <canvas id="renderCanvas"></canvas>
+    </div>
+
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+        var scene = new BABYLON.Scene(engine);
+
+        // Set initial camera position and rotation
+        var camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -22), scene);
+        camera.rotation.x = 0.5; // Pitchcamera.rotation.x = Math.PI / 4; // Pitch
+        camera.rotation.y = 0; // Adjust if needed
+        camera.rotation.z = 0.8; // Adjust if needed
+
+   
+
+
+        camera.attachControl(canvas, true);
+        
+        var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+
+
+
+
+ 
+
+
+        var imagePlanes = [];
+        var numImages = 12;
+        var imageHeight = 9; // Height of one image
+
+        var gap = 10; // Gap between images
+
+        
+
+        function createImagePlane(imageUrl, yPosition) {
+            var plane = BABYLON.MeshBuilder.CreatePlane("imagePlane", { width:16, height: imageHeight }, scene);
+            plane.position = new BABYLON.Vector3(0, yPosition, 0);
+
+            var material = new BABYLON.StandardMaterial("imageMaterial", scene);
+            material.diffuseTexture = new BABYLON.Texture(imageUrl, scene);
+            plane.material = material;
+            imagePlanes.push(plane);
+        }
+
+        for (var i = 0; i < numImages; i++) {
+            createImagePlane("image" + i + ".jpg", i * -gap); // Negative gap for upward layout
+        }
+
+        // Shader and post-process for squeeze effect
+    
+        // Shader and post-process for squeeze effect
+        BABYLON.Effect.ShadersStore["squeezeFragmentShader"] = `
+            precision highp float;
+            varying vec2 vUV;
+            uniform sampler2D textureSampler;
+            void main(void) {
+                vec2 uv = vUV;
+                uv.x = uv.x * (0.8 + 0.1 * sin(uv.y * 2.0));
+                uv.y = uv.y * (0.8 + 0.1 * cos(uv.x * 2.0));
+                gl_FragColor = texture2D(textureSampler, uv);
+            }
+        `;
+        var postProcess = new BABYLON.PostProcess("Squeeze", "squeeze", [], ["textureSampler"], 1.0, camera);
+
+  
+
+        var totalContentHeight = numImages * imageHeight + (numImages ) ;
+
+        // Camera movement range
+        var cameraStartPosition = 50;
+        var cameraEndPosition = (totalContentHeight + (numImages * gap)) - gap*2;
+        var targetCameraPosition = cameraStartPosition;
+        var currentCameraPosition = cameraStartPosition;
+        var cameraScrollSensitivity = 0.02; // Control the camera scroll sensitivity
+
+
+
+  
+ 
+
+      
+
+
+
+        window.addEventListener("wheel", function (e) {
+            var scrollDelta = e.deltaY * cameraScrollSensitivity;
+            targetCameraPosition += scrollDelta;
+            // Clamp the camera position
+            targetCameraPosition = Math.min(Math.max(targetCameraPosition, cameraStartPosition), cameraEndPosition);
+        });
+
+        function animate() {
+            // Smoothly move the camera towards the target position
+            if (Math.abs(targetCameraPosition - currentCameraPosition) > 0.1) {
+                currentCameraPosition += (targetCameraPosition - currentCameraPosition) * 0.1;
+            }
+
+            camera.position.y = -currentCameraPosition + cameraEndPosition / 2; // Center the camera view
+            
+            window.requestAnimationFrame(animate);
+        }
+
+        
+
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+
+        animate();
+    </script>
+</body>
+</html>

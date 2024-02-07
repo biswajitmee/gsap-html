@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Babylon.js Rotating Image Wheel</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100vh;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <div id="gallery-container">
+        <canvas id="renderCanvas"></canvas>
+    </div>
+
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+        var scene = new BABYLON.Scene(engine);
+
+        var camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -5), scene);
+        var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 0, -6), scene);
+
+
+
+
+        camera.rotation.x =  0; 
+        camera.rotation.y =  1.7; 
+        camera.rotation.z =  0; 
+
+        camera.position.z = 0.5;  
+      camera.position.x =  -1.2;
+        camera.position.y = 0 ;  
+
+
+
+        camera.attachControl(canvas, true);
+
+
+        var imagePlanes = [];
+        var numImages = 6; // Number of images
+
+        var shapeRadius = 3; 
+
+        function createImagePlane(imageUrl, angle) {
+            var plane = BABYLON.MeshBuilder.CreatePlane("imagePlane", { width:6, height: 3 }, scene);
+            var radius = 10;
+
+            var position = new BABYLON.Vector3(
+                shapeRadius * Math.cos(angle), 
+                shapeRadius * Math.sin(angle), 
+                0
+            );
+            
+            
+            
+            
+            
+            plane.position.copyFrom(position);
+               
+            
+            var material = new BABYLON.StandardMaterial("imageMaterial", scene);
+            material.diffuseTexture = new BABYLON.Texture(imageUrl, scene);
+
+            plane.material = material;
+            imagePlanes.push(plane);
+        }
+
+        for (var i = 0; i < numImages; i++) {
+            var angle = (Math.PI * 2 * i) / numImages;
+            createImagePlane("image" + i + ".jpg", angle); // Ensure the images are named correctly
+        }
+
+
+
+
+
+   // Register the shader code
+   BABYLON.Effect.ShadersStore["squeezeFragmentShader"] = `
+            precision highp float;
+
+            varying vec2 vUV;
+            uniform sampler2D textureSampler; // The rendered scene
+
+            void main(void) {
+                vec2 uv = vUV;
+
+                // Apply squeeze effect
+                uv.x = uv.x * (0.8 + 0.2 * sin(uv.y * 2.0));
+                uv.y = uv.y * (0.8 + 0.2 * cos(uv.x * 2.0));
+
+                // Sample the original scene with modified coordinates
+                gl_FragColor = texture2D(textureSampler, uv);
+            }
+        `;
+
+        // Create the post-process
+        var postProcess = new BABYLON.PostProcess("Squeeze", "squeeze", [], ["textureSampler"], 1.0, camera);
+
+
+
+
+
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+
+
+ // Smooth scrolling variables
+var targetScrollPosition = 0;
+var currentScrollPosition = 0;
+var scrollSmoothingFactor = 0.1; // Adjust this for smoother or faster scrolling
+
+
+
+
+window.addEventListener("wheel", function (e) {
+    targetScrollPosition += e.deltaY * 0.002;
+});
+
+
+
+
+function animate() {
+    // Gradually move currentScrollPosition towards targetScrollPosition
+    currentScrollPosition += (targetScrollPosition - currentScrollPosition) * scrollSmoothingFactor;
+
+    for (var i = 0; i < numImages; i++) {
+        var plane = imagePlanes[i];
+        var radius = 3.5;
+
+        var position = new BABYLON.Vector3(
+            radius * Math.cos(currentScrollPosition + i * Math.PI * 2 / numImages),
+            radius * Math.sin(currentScrollPosition + i * Math.PI * 2 / numImages),
+            0
+        );
+        plane.position.copyFrom(position);
+        plane.rotation.y = Math.atan2(plane.position.x, plane.position.z);
+    }
+
+    window.requestAnimationFrame(animate);
+}
+
+        animate();
+    </script>
+</body>
+</html>
